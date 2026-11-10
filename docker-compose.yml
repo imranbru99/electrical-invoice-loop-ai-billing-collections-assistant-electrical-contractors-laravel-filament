@@ -1,0 +1,61 @@
+services:
+  app:
+    build: .
+    container_name: electrical_invoice_loop_app
+    ports:
+      - "8101:80"
+    environment:
+      APP_NAME: ElectricalInvoiceLoop
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8101
+      APP_KEY: base64:ZWxlY3RyaWNhbGludm9pY2Vsb29wa2V5MTIzNDU2Nzg=
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: electrical_invoice_loop
+      DB_USERNAME: eil
+      DB_PASSWORD: secret
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      REDIS_CLIENT: predis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: electrical_invoice_loop_mysql
+    environment:
+      MYSQL_DATABASE: electrical_invoice_loop
+      MYSQL_USER: eil
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    ports:
+      - "33061:3306"
+    volumes:
+      - eil_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootsecret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: electrical_invoice_loop_redis
+    ports:
+      - "63791:6379"
+    restart: unless-stopped
+
+volumes:
+  eil_mysql_data:
